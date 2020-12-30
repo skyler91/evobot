@@ -5,7 +5,12 @@ module.exports = {
   aliases: ["s"],
   description: "Skip the currently playing song",
   execute(message) {
-    const queue = message.client.queue.get(message.guild.id);
+    let queue = [];
+    if (message.channel.type === 'dm') {
+      queue = message.client.queue.get('701565766033473607');
+    } else {
+      queue = message.client.queue.get(message.guild.id);
+    }
     if (!queue)
       return message.reply("There is nothing playing that I could skip for you.").catch(console.error);
     if (!canModifyQueue(message.member)) return;

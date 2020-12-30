@@ -3,17 +3,18 @@
  */
 const { Client, Collection } = require("discord.js");
 const { readdirSync } = require("fs");
+const { join } = require("path");
+const { TOKEN, PREFIX, TRUSTED_BOTS } = require("./util/EvobotUtil");
+
+/* HTTP Server Imports */
+const express = require('express');
+const app = express();
 const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const httpPort = process.env.HTTP_PORT || 8080;
 const httpsPort = process.env.HTTPS_PORT || 8081;
-const { join } = require("path");
-const cert = {
-  key: fs.readFileSync("./private.key"),
-  cert: fs.readFileSync("./certificate.crt")
-}
-const { TOKEN, PREFIX, TRUSTED_BOTS } = require("./util/EvobotUtil");
+const api = require("./api");
 
 const client = new Client({ disableMentions: "everyone" });
 
@@ -37,22 +38,25 @@ process.on('SIGTERM', handleSignal);
 process.on('SIGINT', handleSignal);
 
 /**
- * HTTP Server
+ * Setup HTTP server
  */
-https.createServer(cert, (req, res) => handleRequest(req, res)).listen(httpsPort);
-http.createServer((req, res) => handleRequest(req, res)).listen(httpPort);
-console.log(`HTTP Server listening on port ${httpPort}`);
-console.log(`HTTPS Server listening on port ${httpsPort}`);
+app.get("/api/queue/:guildId", (req, res) => api.getQueue(req, res, client));
+app.delete("/api/queue/:guildId/:songId", (req, res) => api.removeFromQueue(req, res, client));
 
-function handleRequest(req, res) {
-  if (req.url == '/favicon.ico') {
-    return;
+app.listen(httpPort, () => {
+  console.log("Listening on port 8080 (HTTP)");
+});
+
+try {
+  const cert = {
+      key: fs.readFileSync("./private.key"),
+      cert: fs.readFileSync("./certificate.crt")
   }
-  console.log(`Queue request from: ${req.client.remoteAddress}`)
-  res.writeHead(200, {"Access-Control-Allow-Origin": "*"});
-  let songs = [];
-  client.queue.forEach(value => value.songs.forEach(song => songs.push(song)));
-  res.end(JSON.stringify({songs}, null, 2));
+  https.createServer(cert, (req, res) => handleRequest(req, res)).listen(httpsPort, () => {
+    console.log(`HTTPS Server listening on port ${httpsPort}`);
+  });
+} catch (err) {
+  console.warn("No key or cert found. Skipping HTTPS server");
 }
 
 /**
