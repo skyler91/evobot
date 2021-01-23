@@ -18,43 +18,68 @@ function getSongIdFromUrl(url) {
   return searchParams.get('v');
 }
 
-function createSongHistoryDbJson(song) {
+function createSongHistoryDbJson(song, is_playing = true) {
   const songId = getSongIdFromUrl(song.url);
+  const timestamp = Date.now();
   return {
     id: songId,
-    played_at: Date.now(),
+    qid: song.qid,
+    queued_at: timestamp,
+    played_at: is_playing ? timestamp : '',
     user: {
       id: song.user.id,
       username: song.user.username
     },
-    schema_version: FIREBASE_CONFIG.schema_version
+    schema_version: FIREBASE_CONFIG.schema_version || 1
   }
 }
 
-async function updateSongAggregate(song, songRefId) {
+async function updateSongAggregate(song, songRefId, is_playing = true) {
   if (!db) return;
 
-  songId = getSongIdFromUrl(song.url);
-  songAggregateRef = await db.collection(songAggregateDb).doc(songId).get();
+  const songId = getSongIdFromUrl(song.url);
+  const songAggregateRef = await db.collection(songAggregateDb).doc(songId).get();
+  const timestamp = Date.now();
   let s;
   if(songAggregateRef.exists) {
     s = songAggregateRef.data();
-    s.play_count++;
-    s.last_played = Date.now();
-    s.song_history.push(songRefId);
+    if (is_playing) {
+      s.play_count++;
+      s.last_played = timestamp;
+      s.last_played_by = {
+        id: song.user.id,
+        username: song.user.username
+      };
+    } else {
+      s.queue_count++;
+      s.last_queued = timestamp;
+      s.last_queued_by = {
+        id: song.user.id,
+        username: song.user.username
+      };
+    }
+    if (!s.song_history.includes(songRefId)) {
+      s.song_history.push(songRefId);
+    }
   } else {
     s = {
       title: song.title,
       duration: song.duration,
       url: song.url,
-      play_count: 1,
-      last_played: Date.now(),
-      last_played_by: {
+      play_count: is_playing ? 1 : 0,
+      queue_count: 1,
+      last_queued: timestamp,
+      last_played: is_playing ? timestamp : '',
+      last_played_by: is_playing ? {
         id: song.user.id,
         username: song.user.username,
+      } : null,
+      last_queued_by: {
+        id: song.user.id,
+        username: song.user.username
       },
       song_history: [songRefId],
-      schema_version: FIREBASE_CONFIG.schema_version
+      schema_version: FIREBASE_CONFIG.schema_version || 1
     };
   }
 
@@ -78,11 +103,23 @@ module.exports = {
     return data;
   },
 
-  async saveSong(song) {
+  async saveSong(song, is_playing = true) {
     if (!db) return;
     //console.debug(song);
+    if (!song.qid) {
+      console.error("Song does not contain a queue id");
+    }
 
-    songHistoryDocRef = await db.collection(songHistoryDb).add(createSongHistoryDbJson(song));
-    updateSongAggregate(song, songHistoryDocRef.id);
+    const songHistoryRef = await db.collection(songHistoryDb).doc(song.qid);
+    if (!(await songHistoryRef.get()).exists) {
+      await songHistoryRef.set(createSongHistoryDbJson(song, is_playing));
+    } else if (is_playing) {
+      await songHistoryRef.update({
+        played_at: Date.now()
+      });
+    }
+
+    updateSongAggregate(song, song.qid);
+    console.debug(`Saved song with qid: ${song.qid}`);
   }
 }

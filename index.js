@@ -3,16 +3,12 @@
  */
 const { Client, Collection } = require("discord.js");
 const { readdirSync } = require("fs");
-const http = require("http");
-const https = require("https");
 const fs = require("fs");
-const api = require("./api");
-const httpPort = process.env.HTTP_PORT || 8080;
-const httpsPort = process.env.HTTPS_PORT || 8081;
 const { join } = require("path");
-const { TOKEN, PREFIX, TRUSTED_BOTS, HTTPS } = require("./util/EvobotUtil");
+const { TOKEN, PREFIX, TRUSTED_BOTS } = require("./util/EvobotUtil");
 
 const client = new Client({ disableMentions: "everyone" });
+exports.discordClient = client;
 
 client.login(TOKEN);
 client.commands = new Collection();
@@ -20,6 +16,8 @@ client.prefix = PREFIX;
 client.queue = new Map();
 const cooldowns = new Collection();
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const api = require("./api");
 
 /**
  * Process Events
@@ -32,24 +30,6 @@ function handleSignal(signal) {
 
 process.on('SIGTERM', handleSignal);
 process.on('SIGINT', handleSignal);
-
-/**
- * HTTP Server
- */
-if (HTTPS) {
-  try {
-    const cert = {
-      key: HTTPS.private_key,
-      cert: HTTPS.certificate
-    }
-    https.createServer(cert, (req, res) => api.handleRequest(client, req, res)).listen(httpsPort);
-    console.log(`HTTPS Server listening on port ${httpsPort}`);
-  } catch (err) {
-    console.warn(`Failed to  start HTTPS server: ${err}`)
-  }
-}
-http.createServer((req, res) => api.handleRequest(client, req, res)).listen(httpPort);
-console.log(`HTTP Server listening on port ${httpPort}`);
 
 /**
  * Client Events

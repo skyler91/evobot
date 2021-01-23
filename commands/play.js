@@ -5,6 +5,8 @@ const scdl = require("soundcloud-downloader").default;
 const https = require("https");
 const { YOUTUBE_API_KEY, SOUNDCLOUD_CLIENT_ID, DEFAULT_VOLUME } = require("../util/EvobotUtil");
 const youtube = new YouTubeAPI(YOUTUBE_API_KEY);
+const { v4: uuid } = require('uuid');
+const firebase = require('../firebase');
 
 async function getInfoWithRetry(url, retries = 10) {
   for (let i = 0; i < retries; i++) {
@@ -96,6 +98,8 @@ module.exports = {
         set.add(this[lastIndex].user.id);
       }
       this.splice(lastIndex, 0, newSong);
+
+      firebase.saveSong(newSong, false);
     }
 
     let songInfo = null;
@@ -108,7 +112,8 @@ module.exports = {
           title: songInfo.videoDetails.title,
           url: songInfo.videoDetails.video_url,
           duration: songInfo.videoDetails.lengthSeconds,
-          user: message.author
+          user: message.author,
+          qid: uuid()
         };
       } catch (error) {
         console.error(error);
@@ -120,7 +125,9 @@ module.exports = {
         song = {
           title: trackInfo.title,
           url: trackInfo.permalink_url,
-          duration: Math.ceil(trackInfo.duration / 1000)
+          duration: Math.ceil(trackInfo.duration / 1000),
+          user: message.author,
+          qid: uuid()
         };
       } catch (error) {
         console.error(error);
@@ -134,7 +141,8 @@ module.exports = {
           title: songInfo.videoDetails.title,
           url: songInfo.videoDetails.video_url,
           duration: songInfo.videoDetails.lengthSeconds,
-          user: message.author
+          user: message.author,
+          qid: uuid()
         };
       } catch (error) {
         console.error(error);
