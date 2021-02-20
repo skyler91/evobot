@@ -1,4 +1,5 @@
-var admin = require("firebase-admin");
+const admin = require("firebase-admin");
+const { client } = require('./index');
 const { FIREBASE_CONFIG } = require("./util/EvobotUtil");
 const songHistoryDb = FIREBASE_CONFIG.song_history_collection;
 const songAggregateDb = FIREBASE_CONFIG.song_aggregate_collection;
@@ -170,15 +171,26 @@ module.exports = {
     const songHistoryJson = createSongHistoryDbJson(song);
     const songHistoryDocRef = await db.collection(songHistoryDb).add(songHistoryJson);
     song.doc_id = songHistoryDocRef.id;
-    songHistoryJson.doc_id = songHistoryDocRef.id;
-    const sessionRef = await db.collection(fredSessionDb).doc(currentSession)
+    // songHistoryJson.doc_id = songHistoryDocRef.id;
+    // const sessionRef = await db.collection(fredSessionDb).doc(currentSession)
+    // await sessionRef.update({
+    //   "now_playing": admin.firestore.FieldValue.arrayUnion(songHistoryJson)
+    // });
+    // const currentSessionRef = await db.collection(fredSessionDb).doc('current')
+    // await currentSessionRef.update({
+    //   "now_playing": admin.firestore.FieldValue.arrayUnion(songHistoryJson)
+    // });
+    let songs = [];
+    client.queue.forEach(value => value.songs.forEach(song => songs.push(JSON.parse(JSON.stringify(song)))));
+    const sessionRef = await db.collection(fredSessionDb).doc(currentSession);
     await sessionRef.update({
-      "now_playing": admin.firestore.FieldValue.arrayUnion(songHistoryJson)
+      "now_playing": songs
     });
-    const currentSessionRef = await db.collection(fredSessionDb).doc('current')
+    const currentSessionRef = await db.collection(fredSessionDb).doc('current');
     await currentSessionRef.update({
-      "now_playing": admin.firestore.FieldValue.arrayUnion(songHistoryJson)
+      "now_playing": songs
     });
+
     console.info(`${song.user.username} (${song.user.id}) queued ${song.title} with document id ${songHistoryDocRef.id}`);
   },
 }

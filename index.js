@@ -13,6 +13,7 @@ const { TOKEN, PREFIX, TRUSTED_BOTS, HTTPS } = require("./util/EvobotUtil");
 const firebase = require('./firebase');
 
 const client = new Client({ disableMentions: "everyone" });
+exports.client = client;
 
 client.login(TOKEN);
 client.commands = new Collection();
