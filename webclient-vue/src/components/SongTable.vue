@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="isPlaying" class="songtable">
+    <div class="songtable">
       <table class="pure-table pure-table-horizontal">
           <thead>
               <tr>
@@ -10,14 +10,11 @@
               </tr>
           </thead>
           <transition-group tag="tbody" name="songRow">
-              <SongRow v-for="(item, idx) in fred_session.now_playing" :key="'song'+idx" :idx='idx' :song='item' />
+              <SongRow v-for="(item, idx) in songs" :key="'song'+idx" :idx='idx' :song='item' />
           </transition-group>
       </table>
       <br />
       <p>Queued music: {{ totalTime }}</p>
-    </div>
-    <div v-if="!isPlaying">
-      <h1>Add some music!</h1>
     </div>
   </div>
 </template>
@@ -28,6 +25,8 @@ import Vue from 'vue'
 import { firestorePlugin } from 'vuefire'
 import { db } from '../services/firebase'
 import { config } from '../config'
+import '../services/fred-api'
+import { getQueue } from '../services/fred-api'
 Vue.use(firestorePlugin)
 const fred_session_collection = config.fred_session_collection || 'fred_session';
 const fred_session_current_doc = config.fred_session_current_doc || 'current';
@@ -40,21 +39,44 @@ export default {
   data () {
     return {
       fred_session: {},
+      songs: [],
+      totalTime: '00:00',
+      lastUpdated: 'Never',
+      timer: ''
     }
   },
 
-  computed : {
-    totalTime: function() {
-      const time = this.fred_session.now_playing
-        ? this.fred_session.now_playing.reduce((a,b) => a + parseInt(b.duration), 0)
-        : 0;
-      return time
-        ? new Date(time * 1000).toISOString().substr(11, 8)
-        : "00:00";
-    },
-    isPlaying: function() {
-      return this.fred_session && this.fred_session.now_playing && this.fred_session.now_playing.length > 0
+  created() {
+    getQueue().then(res => {
+      this.songs = res.songs;
+      this.totalTime = res.totalTime;
+      this.lastUpdated = res.lastUpdated;
+    })
+    this.timer = setInterval(getQueue, 5000);
+  },
+
+  methods: {
+    cancelAutoUpdate() {
+      clearInterval(this.timer);
     }
+  },
+
+  beforeDestroy() {
+    clearInterval(this.timer);
+  },
+
+  computed : {
+    // totalTime: function() {
+    //   const time = this.fred_session.now_playing
+    //     ? this.fred_session.now_playing.reduce((a,b) => a + parseInt(b.duration), 0)
+    //     : 0;
+    //   return time
+    //     ? new Date(time * 1000).toISOString().substr(11, 8)
+    //     : "00:00";
+    // },
+    // isPlaying: function() {
+    //   return this.fred_session && this.fred_session.now_playing && this.fred_session.now_playing.length > 0
+    // }
   },
 
   firestore: {
