@@ -15,7 +15,7 @@
     "@discordjs/opus": "^0.7.0",
     "array-move": "^3.0.1",
     "discord.js": "^12.5.1",
-    "firebase": "^8.2.2",
+    "firebase": "^9.9.4",
     "firebase-admin": "^9.4.2",
     "firebase-functions": "^3.13.0",
     "ffmpeg-static": "^4.4.1",
