@@ -58,7 +58,7 @@ export default {
     let song;
 
     try {
-      song = await Song.from(url, url);
+      song = await Song.from(url, url, guildMember!);
     } catch (error: any) {
       console.error(error);
 

@@ -17,6 +17,7 @@ import { config } from "../utils/config";
 import { i18n } from "../utils/i18n";
 import { MissingPermissionsException } from "../utils/MissingPermissionsException";
 import { MusicQueue } from "./MusicQueue";
+import { Song } from "./Song";
 
 export class Bot {
   public readonly prefix = "/";
@@ -37,6 +38,33 @@ export class Bot {
 
     this.client.on("warn", (info) => console.log(info));
     this.client.on("error", console.error);
+    this.client.on(Events.MessageCreate, async (message) => {
+      console.info(config.TRUSTED_BOTS);
+      if (!message.author.bot || !config.TRUSTED_BOTS.includes(message.author.id) || !message.content.startsWith("!play ") || !message.content.includes('['))
+        return;
+      
+      const queue = this.queues.get(message.guildId!);
+      if (!queue) {
+        console.error(`No queue found for guild ${message.guildId}`);
+        return;
+      }
+
+      const contentSplit = message.content.split(' ');
+      if (contentSplit.length != 3) {
+        console.error(`Command in wrong format: ${message.content}`);
+        return;
+      }
+
+      const reqUserId = contentSplit[2].replace(']', '').replace('[', '');
+      const guildMember = this.client.guilds.cache.get(message.guildId!)?.members.cache.get(reqUserId);
+      if (!guildMember) {
+        console.error(`Guild member with id ${reqUserId} not found`);
+      }
+
+      const song = await Song.from(contentSplit[1], undefined, guildMember!);
+      queue.enqueue(song)
+      message.delete();
+    });
 
     this.onInteractionCreate();
   }

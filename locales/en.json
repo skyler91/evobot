@@ -104,7 +104,7 @@
     "errorNotQueue": "❌ **Nothing playing in this server**",
     "currentPage": "Current Page - ",
     "embedTitle": "Song Queue\n",
-    "embedCurrentSong": "**Current Song - [{title}]({url})**\n\n{info}"
+    "embedCurrentSong": "**Current Song - [{title}]({url}) ({username})**\n\n{info}"
   },
   "remove": {
     "description": "Remove song from the queue",

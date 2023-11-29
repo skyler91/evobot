@@ -27,8 +27,8 @@ export default {
   async execute(interaction: ChatInputCommandInteraction, queryOptionName = "playlist") {
     let argSongName = interaction.options.getString(queryOptionName);
 
-    const guildMemer = interaction.guild!.members.cache.get(interaction.user.id);
-    const { channel } = guildMemer!.voice;
+    const guildMember = interaction.guild!.members.cache.get(interaction.user.id);
+    const { channel } = guildMember!.voice;
 
     const queue = bot.queues.get(interaction.guild!.id);
 
@@ -51,7 +51,7 @@ export default {
     let playlist;
 
     try {
-      playlist = await Playlist.from(argSongName!.split(" ")[0], argSongName!);
+      playlist = await Playlist.from(argSongName!.split(" ")[0], argSongName!, guildMember!);
     } catch (error) {
       console.error(error);
 
@@ -64,7 +64,10 @@ export default {
     }
 
     if (queue) {
-      queue.songs.push(...playlist.videos);
+      playlist.videos.forEach(video => {
+        queue.enqueue(video);
+      });
+      // queue.songs.push(...playlist.videos);
     } else {
       const newQueue = new MusicQueue({
         interaction,

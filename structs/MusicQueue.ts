@@ -119,7 +119,25 @@ export class MusicQueue {
     if (this.waitTimeout !== null) clearTimeout(this.waitTimeout);
     this.waitTimeout = null;
     this.stopped = false;
-    this.songs = this.songs.concat(songs);
+    songs.forEach(song => {
+      let lastIndex = this.songs.length - 1;
+      for (; lastIndex > -1; lastIndex--) {
+        if (this.songs[lastIndex].user.id == song.user.id) {
+          break;
+        }
+      }
+      lastIndex++;
+      const set = new Set();
+      for (; lastIndex < this.songs.length; lastIndex++) {
+        if (set.has(this.songs[lastIndex].user.id)) {
+          break;
+        }
+        set.add(this.songs[lastIndex].user.id);
+      }
+      this.songs.splice(lastIndex, 0, song);
+    });
+    
+    // this.songs = this.songs.concat(songs);
     this.processQueue();
   }
 

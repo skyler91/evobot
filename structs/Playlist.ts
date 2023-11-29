@@ -1,6 +1,7 @@
 import youtube, { Playlist as YoutubePlaylist } from "youtube-sr";
 import { config } from "../utils/config";
 import { Song } from "./Song";
+import { GuildMember } from "discord.js";
 
 const pattern = /^.*(youtu.be\/|list=)([^#\&\?]*).*/i;
 
@@ -8,7 +9,7 @@ export class Playlist {
   public data: YoutubePlaylist;
   public videos: Song[];
 
-  public constructor(playlist: YoutubePlaylist) {
+  public constructor(playlist: YoutubePlaylist, user: GuildMember) {
     this.data = playlist;
 
     this.videos = this.data.videos
@@ -18,12 +19,13 @@ export class Playlist {
         return new Song({
           title: video.title!,
           url: `https://youtube.com/watch?v=${video.id}`,
-          duration: video.duration / 1000
+          duration: video.duration / 1000,
+          user: user
         });
       });
   }
 
-  public static async from(url: string = "", search: string = "") {
+  public static async from(url: string = "", search: string = "", user: GuildMember) {
     const urlValid = pattern.test(url);
     let playlist;
 
@@ -35,6 +37,6 @@ export class Playlist {
       playlist = await youtube.getPlaylist(result.url!);
     }
 
-    return new this(playlist);
+    return new this(playlist, user);
   }
 }

@@ -87,13 +87,13 @@ function generateQueueEmbed(interaction: CommandInteraction, songs: Song[]) {
     let j = i;
     k += 10;
 
-    const info = current.map((track) => `${++j} - [${track.title}](${track.url})`).join("\n");
+    const info = current.map((track) => `${++j} - [${track.title}](${track.url}) (${track.user.displayName})`).join("\n");
 
     const embed = new EmbedBuilder()
       .setTitle(i18n.__("queue.embedTitle"))
       .setThumbnail(interaction.guild?.iconURL()!)
       .setColor("#F8AA2A")
-      .setDescription(i18n.__mf("queue.embedCurrentSong", { title: songs[0].title, url: songs[0].url, info: info }))
+      .setDescription(i18n.__mf("queue.embedCurrentSong", { title: songs[0].title, url: songs[0].url, info: info, username: songs[0].user.displayName }))
       .setTimestamp();
     embeds.push(embed);
   }

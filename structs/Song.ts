@@ -2,6 +2,7 @@ import { AudioResource, createAudioResource, StreamType } from "@discordjs/voice
 import youtube from "youtube-sr";
 import { i18n } from "../utils/i18n";
 import { videoPattern, isURL } from "../utils/patterns";
+import { GuildMember } from "discord.js";
 
 const { stream, video_basic_info } = require("play-dl");
 
@@ -9,20 +10,23 @@ export interface SongData {
   url: string;
   title: string;
   duration: number;
+  user: object;
 }
 
 export class Song {
   public readonly url: string;
   public readonly title: string;
   public readonly duration: number;
+  public readonly user: any;
 
-  public constructor({ url, title, duration }: SongData) {
+  public constructor({ url, title, duration, user }: SongData) {
     this.url = url;
     this.title = title;
     this.duration = duration;
+    this.user = user;
   }
 
-  public static async from(url: string = "", search: string = "") {
+  public static async from(url: string = "", search: string = "", user: GuildMember) {
     const isYoutubeUrl = videoPattern.test(url);
 
     let songInfo;
@@ -33,7 +37,8 @@ export class Song {
       return new this({
         url: songInfo.video_details.url,
         title: songInfo.video_details.title,
-        duration: parseInt(songInfo.video_details.durationInSec)
+        duration: parseInt(songInfo.video_details.durationInSec),
+        user: user
       });
     } else {
       const result = await youtube.searchOne(search);
@@ -55,7 +60,8 @@ export class Song {
       return new this({
         url: songInfo.video_details.url,
         title: songInfo.video_details.title,
-        duration: parseInt(songInfo.video_details.durationInSec)
+        duration: parseInt(songInfo.video_details.durationInSec),
+        user: user
       });
     }
   }
